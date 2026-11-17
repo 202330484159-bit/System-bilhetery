@@ -24,6 +24,13 @@ public class FilmeService {
         return FilmeResponse.from(encontrar(id));
     }
 
+    @Transactional(readOnly = true)
+    public FilmeResponse buscarAtivo(UUID id) {
+        Filme filme = repository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Filme não encontrado: " + id));
+        return FilmeResponse.from(filme);
+    }
+
     public FilmeResponse criar(FilmeRequest request) {
         Filme filme = new Filme(request.titulo().trim(), request.genero().trim(),
                 request.duracaoMinutos(), request.classificacaoIndicativa().trim(), request.sinopse().trim());
