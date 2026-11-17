@@ -2,7 +2,7 @@ package br.com.cinetickets.filme;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -19,7 +19,7 @@ public class FilmeController {
                                       Authentication authentication) {
         if (todos && (authentication == null || authentication.getAuthorities().stream()
                 .noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN")))) {
-            throw new AccessDeniedException("A consulta de filmes inativos exige perfil ADMIN.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "A consulta de filmes inativos exige perfil ADMIN.");
         }
         return service.listar(todos);
     }
