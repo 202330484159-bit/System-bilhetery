@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Administração | CineTickets</title>
   <link rel="stylesheet" href="../css/styles.css">
+  <script defer src="../js/admin-auth.js"></script>
   <script defer src="../js/app.js"></script>
 </head>
 <body>
@@ -12,12 +13,26 @@
   <a class="brand" href="../index.html"><span class="brand-mark">C</span><span>CINE<span class="brand-light">TICKETS</span></span></a>
   <nav class="main-nav"><a href="../index.html">Visualizar catálogo</a></nav>
   <span class="admin-pill">PAINEL ADMINISTRATIVO</span>
+  <button id="admin-logout" class="admin-action" type="button" hidden>Sair</button>
 </header>
 <main class="page-shell">
   <span class="eyebrow">GESTÃO DO CINEMA</span>
   <h1 class="page-title">Central de administração</h1>
   <p class="muted">Área de cadastro do catálogo CineTickets.</p>
-  <div class="admin-grid">
+  <section id="admin-login" class="panel admin-card" style="max-width:460px;margin:32px auto" hidden>
+    <span class="admin-icon">▣</span>
+    <h2>Acesso administrativo</h2>
+    <p>Entre com suas credenciais para gerenciar o catálogo.</p>
+    <form id="admin-login-form">
+      <label class="field-label" for="admin-login-email">E-mail</label>
+      <input id="admin-login-email" class="text-field" type="email" autocomplete="username" maxlength="180" required>
+      <label class="field-label" for="admin-login-password">Senha</label>
+      <input id="admin-login-password" class="text-field" type="password" autocomplete="current-password" maxlength="200" required>
+      <button class="button button-primary full-width" type="submit">Entrar</button>
+    </form>
+    <p id="admin-login-feedback" class="notice" role="status" aria-live="polite" hidden></p>
+  </section>
+  <div class="admin-grid" id="admin-content" hidden>
     <section class="panel admin-card">
       <span class="admin-icon">▣</span>
       <h2>Filmes</h2>
@@ -55,7 +70,6 @@
       <div class="admin-info"><span>Categorias</span><strong>Normal · Premium · VIP</strong></div>
     </section>
   </div>
-  <p class="notice">Ambiente de desenvolvimento: a API ainda não possui autenticação. Não utilize este painel nem exponha operações de escrita em produção antes de implementar login, autorização e proteção dos endpoints administrativos.</p>
 </main>
 </body>
 </html>
