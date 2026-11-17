@@ -24,7 +24,7 @@ public class FilmeController {
         return service.listar(todos);
     }
     @GetMapping("/{id}")
-    public FilmeResponse buscar(@PathVariable UUID id) { return service.buscar(id); }
+    public FilmeResponse buscar(@PathVariable UUID id) { return service.buscarAtivo(id); }
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public FilmeResponse criar(@Valid @RequestBody FilmeRequest request) { return service.criar(request); }
