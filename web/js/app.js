@@ -1,40 +1,104 @@
+const API_BASE_URL = window.CINETICKETS_API_URL || 'https://super-funicular-jrq6j9v7j6w5cqgx5-8080.app.github.dev';
 const money = value => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value);
-const defaultMovies = [
-{id:'orbita',title:'Órbita Final',genre:'Ficção',duration:128,rating:'12 anos',score:'9,2',symbol:'✦',colors:['#163c70','#081629'],description:'Uma missão além das estrelas coloca o destino de toda a humanidade em jogo.'},
-{id:'ultimo-round',title:'O Último Round',genre:'Ação',duration:112,rating:'14 anos',score:'8,8',symbol:'✧',colors:['#814a35','#281b27'],description:'Um campeão afastado dos ringues encontra uma razão para lutar novamente.'},
-{id:'alem-mar',title:'Além do Mar',genre:'Drama',duration:104,rating:'10 anos',score:'9,0',symbol:'≈',colors:['#1c6675','#10263a'],description:'Uma viagem inesperada transforma a relação de uma família.'},
-{id:'reino-luz',title:'O Reino da Luz',genre:'Aventura',duration:119,rating:'Livre',score:'9,4',symbol:'☼',colors:['#8b6b37','#332a36'],description:'Uma jovem exploradora parte em busca de uma cidade esquecida.'}
-];
 const read = (key,fallback) => {try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch{return fallback}};
 const save = (key,value) => localStorage.setItem(key,JSON.stringify(value));
-const getMovies = () => [...defaultMovies,...read('ct-custom-movies',[])];
+let catalogMovies = [];
+
+async function apiRequest(path, options = {}) {
+ const response = await fetch(`${API_BASE_URL}${path}`, {
+  ...options,
+  credentials: 'omit',
+  headers: {'Accept':'application/json', ...(options.body ? {'Content-Type':'application/json'} : {}), ...(options.headers || {})}
+ });
+ if (!response.ok) {
+  let detail = '';
+  try { const body = await response.json(); detail = body.message || body.detail || ''; } catch {}
+  throw new Error(detail || `A API respondeu com HTTP ${response.status}.`);
+ }
+ if (response.status === 204) return null;
+ return response.json();
+}
+const apiListMovies = () => apiRequest('/api/filmes');
+const mapMovie = film => ({
+ id: film.id,
+ title: film.titulo,
+ genre: film.genero,
+ duration: film.duracaoMinutos,
+ rating: film.classificacaoIndicativa,
+ description: film.sinopse,
+ score: 'Em breve',
+ symbol: '✦',
+ colors: ['#244b73','#101b2c'],
+ active: film.ativo
+});
+function escapeHTML(value){return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function setFeedback(element, message, type = 'info') {
+ if (!element) return;
+ element.textContent = message;
+ element.className = type === 'error' ? 'notice error' : 'notice';
+ element.hidden = !message;
+}
 function renderMovies(){
  const grid=document.querySelector('#movie-grid'); if(!grid)return;
  const query=(document.querySelector('#movie-search')?.value||'').toLocaleLowerCase('pt-BR');
  const genre=document.querySelector('.chip.selected')?.dataset.genre||'Todos';
- const list=getMovies().filter(m=>(genre==='Todos'||m.genre===genre)&&(m.title+' '+m.genre).toLocaleLowerCase('pt-BR').includes(query));
- grid.innerHTML=list.map(m=>`<article class="movie-card"><div class="poster" style="--poster-a:${m.colors?.[0]||'#244b73'};--poster-b:${m.colors?.[1]||'#101b2c'}"><span class="poster-symbol">${m.symbol||'✦'}</span><span class="poster-tag">${m.rating||'Livre'}</span></div><div class="movie-info"><h3>${escapeHTML(m.title)}</h3><div class="movie-meta">${escapeHTML(m.genre)} · ${Number(m.duration)||110} min</div><div class="movie-bottom"><span class="rating">★ ${m.score||'Em breve'}</span><a class="button button-primary" href="pages/assentos.html?movie=${encodeURIComponent(m.id)}">Ver sessões →</a></div></div></article>`).join('')||'<p class="muted">Nenhum filme encontrado. Tente outra busca.</p>';
- document.querySelector('#movie-count').textContent=`${list.length} título(s)`;
+ const list=catalogMovies.filter(m=>(genre==='Todos'||m.genre===genre)&&(m.title+' '+m.genre).toLocaleLowerCase('pt-BR').includes(query));
+ grid.innerHTML=list.map(m=>`<article class="movie-card"><div class="poster" style="--poster-a:${m.colors[0]};--poster-b:${m.colors[1]}"><span class="poster-symbol">${m.symbol}</span><span class="poster-tag">${escapeHTML(m.rating||'Livre')}</span></div><div class="movie-info"><h3>${escapeHTML(m.title)}</h3><div class="movie-meta">${escapeHTML(m.genre)} · ${Number(m.duration)||110} min</div><div class="movie-bottom"><span class="rating">★ ${m.score}</span><a class="button button-primary" href="pages/assentos.html?movie=${encodeURIComponent(m.id)}">Ver sessões →</a></div></div></article>`).join('')||'<p class="muted">Nenhum filme encontrado. Tente outra busca.</p>';
+ const count=document.querySelector('#movie-count');
+ if(count) count.textContent=`${list.length} título(s)`;
 }
-function escapeHTML(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function loadCatalog() {
+ const grid=document.querySelector('#movie-grid');
+ if(grid) grid.innerHTML='<p class="muted">Carregando filmes...</p>';
+ try {
+  const films=await apiListMovies();
+  catalogMovies=films.map(mapMovie);
+  renderMovies();
+ } catch(error) {
+  catalogMovies=[];
+  if(grid) grid.innerHTML=`<p class="muted">Não foi possível carregar o catálogo. ${escapeHTML(error.message)} Atualize a página ou tente novamente mais tarde.</p>`;
+  const count=document.querySelector('#movie-count');
+  if(count) count.textContent='Catálogo indisponível';
+ }
+}
 function setupCatalog(){
+ if(!document.querySelector('#movie-grid'))return;
  document.querySelector('#movie-search')?.addEventListener('input',renderMovies);
  document.querySelector('#genre-filters')?.addEventListener('click',e=>{const b=e.target.closest('[data-genre]');if(!b)return;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('selected',x===b));renderMovies()});
- renderMovies();
+ loadCatalog();
 }
-function setupSeats(){
+async function setupSeats(){
  const map=document.querySelector('#seat-map');if(!map)return;
- const params=new URLSearchParams(location.search), movie=getMovies().find(m=>m.id===params.get('movie'))||defaultMovies[0];
+ const params=new URLSearchParams(location.search);
  const session=read('ct-session',{date:'Hoje',time:'19:30',room:'Sala 02',format:'2D',roomType:'Tradicional'});
- document.querySelector('#seat-movie-title').textContent=movie.title;
- document.querySelector('#seat-session-label').textContent=`${session.date} · ${session.time} · ${session.roomType} · ${session.format}`;
- const occupied=new Set(['A4','A5','B7','C3','D8','E2','F6','G5']);
- let selected=new Set(read('ct-selected-seats',[]));
- const rows='ABCDEFGH'.split('');
- map.innerHTML=rows.map((row,ri)=>`<div class="seat-row"><span class="row-label">${row}</span>${Array.from({length:10},(_,i)=>{const id=row+(i+1),premium=ri>=6;return `<button class="seat ${premium?'premium':''} ${occupied.has(id)?'occupied':''} ${selected.has(id)?'selected':''}" data-seat="${id}" ${occupied.has(id)?'disabled':''} aria-label="Poltrona ${id}">${i+1}</button>`}).join('')}</div>`).join('');
- const update=()=>{document.querySelectorAll('[data-seat]').forEach(b=>b.classList.toggle('selected',selected.has(b.dataset.seat)));document.querySelector('#selected-seats').textContent=selected.size?[...selected].sort().join(', '):'Nenhum assento';document.querySelector('#seat-total').textContent=money([...selected].reduce((sum,id)=>sum+(id[0]>='G'?42:30),0));document.querySelector('#continue-checkout').disabled=!selected.size;save('ct-selected-seats',[...selected]);};
- map.addEventListener('click',e=>{const b=e.target.closest('[data-seat]');if(!b||b.disabled)return;if(selected.has(b.dataset.seat))selected.delete(b.dataset.seat);else if(selected.size<6)selected.add(b.dataset.seat);else alert('Você pode selecionar até 6 assentos por pedido.');update()});
- document.querySelector('#continue-checkout').addEventListener('click',()=>{save('ct-order',{movie:movie.title,movieId:movie.id,session,seats:[...selected],createdAt:new Date().toISOString()});location.href='checkout.html'});update();
+ const title=document.querySelector('#seat-movie-title');
+ const continueButton=document.querySelector('#continue-checkout');
+ try {
+  const films=await apiListMovies();
+  const film=films.find(item=>item.id===params.get('movie'));
+  if(!film) {
+   title.textContent='Filme indisponível';
+   map.innerHTML='<p class="muted">Este filme não está disponível no catálogo. Volte e escolha um título ativo.</p>';
+   document.querySelector('#seat-session-label').textContent='Não foi possível carregar uma sessão.';
+   if(continueButton) continueButton.disabled=true;
+   return;
+  }
+  const movie=mapMovie(film);
+  title.textContent=movie.title;
+  document.querySelector('#seat-session-label').textContent=`${session.date} · ${session.time} · ${session.roomType} · ${session.format}`;
+  const occupied=new Set(['A4','A5','B7','C3','D8','E2','F6','G5']);
+  let selected=new Set(read('ct-selected-seats',[]));
+  const rows='ABCDEFGH'.split('');
+  map.innerHTML=rows.map((row,ri)=>`<div class="seat-row"><span class="row-label">${row}</span>${Array.from({length:10},(_,i)=>{const id=row+(i+1),premium=ri>=6;return `<button class="seat ${premium?'premium':''} ${occupied.has(id)?'occupied':''} ${selected.has(id)?'selected':''}" data-seat="${id}" ${occupied.has(id)?'disabled':''} aria-label="Poltrona ${id}">${i+1}</button>`}).join('')}</div>`).join('');
+  const update=()=>{map.querySelectorAll('[data-seat]').forEach(b=>b.classList.toggle('selected',selected.has(b.dataset.seat)));document.querySelector('#selected-seats').textContent=selected.size?[...selected].sort().join(', '):'Nenhum assento';document.querySelector('#seat-total').textContent=money([...selected].reduce((sum,id)=>sum+(id[0]>='G'?42:30),0));continueButton.disabled=!selected.size;save('ct-selected-seats',[...selected]);};
+  map.addEventListener('click',e=>{const b=e.target.closest('[data-seat]');if(!b||b.disabled)return;if(selected.has(b.dataset.seat))selected.delete(b.dataset.seat);else if(selected.size<6)selected.add(b.dataset.seat);else alert('Você pode selecionar até 6 assentos por pedido.');update()});
+  continueButton.addEventListener('click',()=>{save('ct-order',{movie:movie.title,movieId:movie.id,session,seats:[...selected],createdAt:new Date().toISOString()});location.href='checkout.html'});
+  update();
+ } catch(error) {
+  title.textContent='Não foi possível carregar o filme';
+  map.innerHTML=`<p class="muted">${escapeHTML(error.message)}. Volte ao catálogo e tente novamente.</p>`;
+  if(continueButton) continueButton.disabled=true;
+ }
 }
 function setupCheckout(){
  const form=document.querySelector('#checkout-form');if(!form)return;
@@ -50,8 +114,43 @@ function setupTickets(){
  if(new URLSearchParams(location.search).has('confirmed'))list.insertAdjacentHTML('beforebegin','<div class="notice">Ingresso demonstrativo confirmado! Você pode consultar os detalhes abaixo.</div>');
  list.innerHTML=tickets.length?tickets.map(t=>`<article class="ticket-item"><div><strong>${escapeHTML(t.movie)}</strong><p>${escapeHTML(t.session.date)} · ${escapeHTML(t.session.time)} · Assentos: ${t.seats.join(', ')}</p><p>${escapeHTML(t.name)} · ${money(t.total)}</p></div><span class="ticket-code">${escapeHTML(t.code)}</span></article>`).join(''):'<div class="panel"><p class="muted">Você ainda não tem ingressos confirmados neste navegador.</p><a class="button button-primary" href="../index.html">Explorar filmes →</a></div>';
 }
+function renderAdminMovies(films) {
+ const list=document.querySelector('#admin-movie-list'); if(!list)return;
+ list.innerHTML=films.length?films.map(f=>`<div class="admin-info"><span>${escapeHTML(f.titulo)} · ${escapeHTML(f.genero)}</span><strong>${Number(f.duracaoMinutos)} min · ${escapeHTML(f.classificacaoIndicativa)}</strong></div>`).join(''):'<p class="muted">Nenhum filme ativo cadastrado.</p>';
+}
+async function loadAdminMovies() {
+ const list=document.querySelector('#admin-movie-list'); if(!list)return;
+ list.innerHTML='<p class="muted">Carregando catálogo...</p>';
+ try { renderAdminMovies(await apiListMovies()); }
+ catch(error) { list.textContent='Não foi possível consultar a API: '+error.message; }
+}
 function setupAdmin(){
  const form=document.querySelector('#admin-movie-form');if(!form)return;
- form.addEventListener('submit',e=>{e.preventDefault();const title=document.querySelector('#admin-title').value.trim();if(!title)return;const custom=read('ct-custom-movies',[]);custom.push({id:'custom-'+Date.now(),title,genre:document.querySelector('#admin-genre').value,duration:110,rating:document.querySelector('#admin-rating').value,score:'Novo',symbol:'✦',colors:['#24517d','#111c2e'],description:'Filme adicionado pelo painel demonstrativo.'});save('ct-custom-movies',custom);form.reset();alert('Filme adicionado ao catálogo deste navegador.');});
+ const feedback=document.querySelector('#admin-feedback');
+ loadAdminMovies();
+ form.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const button=form.querySelector('button[type="submit"]');
+  const payload={
+   titulo:document.querySelector('#admin-title').value.trim(),
+   genero:document.querySelector('#admin-genre').value,
+   duracaoMinutos:Number(document.querySelector('#admin-duration').value),
+   classificacaoIndicativa:document.querySelector('#admin-rating').value,
+   sinopse:document.querySelector('#admin-synopsis').value.trim(),
+   ativo:true
+  };
+  if(!payload.titulo||!payload.sinopse||!Number.isInteger(payload.duracaoMinutos)||payload.duracaoMinutos<1||payload.duracaoMinutos>600) {
+   setFeedback(feedback,'Preencha todos os campos corretamente. A duração deve estar entre 1 e 600 minutos.','error');return;
+  }
+  button.disabled=true;button.textContent='Salvando...';
+  try {
+   await apiRequest('/api/filmes',{method:'POST',body:JSON.stringify(payload)});
+   form.reset();
+   setFeedback(feedback,'Filme cadastrado no banco de dados com sucesso.');
+   await loadAdminMovies();
+  } catch(error) {
+   setFeedback(feedback,'Não foi possível cadastrar o filme: '+error.message,'error');
+  } finally { button.disabled=false;button.textContent='Adicionar filme'; }
+ });
 }
 document.addEventListener('DOMContentLoaded',()=>{setupCatalog();setupSeats();setupCheckout();setupTickets();setupAdmin()});
