@@ -3,6 +3,7 @@ const money = value => new Intl.NumberFormat('pt-BR',{style:'currency',currency:
 const read = (key,fallback) => {try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch{return fallback}};
 const save = (key,value) => localStorage.setItem(key,JSON.stringify(value));
 let catalogMovies = [];
+let adminMovies = [];
 
 async function apiRequest(path, options = {}) {
  const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -116,7 +117,34 @@ function setupTickets(){
 }
 function renderAdminMovies(films) {
  const list=document.querySelector('#admin-movie-list'); if(!list)return;
- list.innerHTML=films.length?films.map(f=>`<div class="admin-info"><span>${escapeHTML(f.titulo)} · ${escapeHTML(f.genero)}</span><strong>${Number(f.duracaoMinutos)} min · ${escapeHTML(f.classificacaoIndicativa)}</strong></div>`).join(''):'<p class="muted">Nenhum filme ativo cadastrado.</p>';
+ adminMovies = films;
+ list.innerHTML=films.length?films.map(f=>`
+  <article class="admin-movie-entry" data-movie-id="${escapeHTML(f.id)}">
+   <div class="admin-info">
+    <span>${escapeHTML(f.titulo)} · ${escapeHTML(f.genero)}</span>
+    <strong>${Number(f.duracaoMinutos)} min · ${escapeHTML(f.classificacaoIndicativa)}</strong>
+   </div>
+   <div class="admin-actions">
+    <button class="admin-action" type="button" data-edit-movie>Editar</button>
+    <button class="admin-action admin-action-danger" type="button" data-deactivate-movie>Desativar</button>
+   </div>
+   <form class="admin-edit-form" data-edit-form hidden>
+    <label class="field-label">Título</label>
+    <input class="text-field" name="titulo" required maxlength="120" value="${escapeHTML(f.titulo)}">
+    <label class="field-label">Gênero</label>
+    <input class="text-field" name="genero" required maxlength="60" value="${escapeHTML(f.genero)}">
+    <label class="field-label">Duração (minutos)</label>
+    <input class="text-field" name="duracaoMinutos" type="number" min="1" max="600" step="1" required value="${Number(f.duracaoMinutos)}">
+    <label class="field-label">Classificação indicativa</label>
+    <input class="text-field" name="classificacaoIndicativa" required maxlength="30" value="${escapeHTML(f.classificacaoIndicativa)}">
+    <label class="field-label">Sinopse</label>
+    <textarea class="text-field" name="sinopse" rows="3" maxlength="2000" required>${escapeHTML(f.sinopse)}</textarea>
+    <div class="admin-actions">
+     <button class="admin-action admin-action-primary" type="submit">Salvar alterações</button>
+     <button class="admin-action" type="button" data-cancel-edit>Cancelar</button>
+    </div>
+   </form>
+  </article>`).join(''):'<p class="muted">Nenhum filme ativo cadastrado.</p>';
 }
 async function loadAdminMovies() {
  const list=document.querySelector('#admin-movie-list'); if(!list)return;
@@ -127,6 +155,7 @@ async function loadAdminMovies() {
 function setupAdmin(){
  const form=document.querySelector('#admin-movie-form');if(!form)return;
  const feedback=document.querySelector('#admin-feedback');
+ const list=document.querySelector('#admin-movie-list');
  loadAdminMovies();
  form.addEventListener('submit',async e=>{
   e.preventDefault();
@@ -151,6 +180,65 @@ function setupAdmin(){
   } catch(error) {
    setFeedback(feedback,'Não foi possível cadastrar o filme: '+error.message,'error');
   } finally { button.disabled=false;button.textContent='Adicionar filme'; }
+ });
+ list.addEventListener('click',async e=>{
+  const editButton=e.target.closest('[data-edit-movie]');
+  const cancelButton=e.target.closest('[data-cancel-edit]');
+  const deactivateButton=e.target.closest('[data-deactivate-movie]');
+  const entry=e.target.closest('.admin-movie-entry');
+  if(!entry)return;
+  if(editButton){
+   entry.querySelector('[data-edit-form]').hidden=false;
+   editButton.hidden=true;
+   return;
+  }
+  if(cancelButton){
+   entry.querySelector('[data-edit-form]').hidden=true;
+   entry.querySelector('[data-edit-movie]').hidden=false;
+   return;
+  }
+  if(deactivateButton){
+   const movie=adminMovies.find(item=>item.id===entry.dataset.movieId);
+   if(!movie||!confirm(`Desativar "${movie.titulo}"? Ele deixará de aparecer no catálogo, mas continuará salvo no banco de dados.`))return;
+   deactivateButton.disabled=true;
+   try{
+    await apiRequest(`/api/filmes/${encodeURIComponent(movie.id)}`,{method:'DELETE'});
+    setFeedback(feedback,`Filme "${movie.titulo}" desativado. O registro foi preservado no banco de dados.`);
+    await loadAdminMovies();
+   }catch(error){
+    setFeedback(feedback,'Não foi possível desativar o filme: '+error.message,'error');
+    deactivateButton.disabled=false;
+   }
+  }
+ });
+ list.addEventListener('submit',async e=>{
+  const editForm=e.target.closest('[data-edit-form]');
+  if(!editForm)return;
+  e.preventDefault();
+  const entry=editForm.closest('.admin-movie-entry');
+  const movie=adminMovies.find(item=>item.id===entry.dataset.movieId);
+  if(!movie)return;
+  const button=editForm.querySelector('button[type="submit"]');
+  const payload={
+   titulo:editForm.elements.titulo.value.trim(),
+   genero:editForm.elements.genero.value.trim(),
+   duracaoMinutos:Number(editForm.elements.duracaoMinutos.value),
+   classificacaoIndicativa:editForm.elements.classificacaoIndicativa.value.trim(),
+   sinopse:editForm.elements.sinopse.value.trim(),
+   ativo:true
+  };
+  if(!payload.titulo||!payload.genero||!payload.classificacaoIndicativa||!payload.sinopse||!Number.isInteger(payload.duracaoMinutos)||payload.duracaoMinutos<1||payload.duracaoMinutos>600){
+   setFeedback(feedback,'Revise os campos. A duração deve estar entre 1 e 600 minutos.','error');return;
+  }
+  button.disabled=true;button.textContent='Salvando...';
+  try{
+   await apiRequest(`/api/filmes/${encodeURIComponent(movie.id)}`,{method:'PUT',body:JSON.stringify(payload)});
+   setFeedback(feedback,`Filme "${payload.titulo}" atualizado com sucesso.`);
+   await loadAdminMovies();
+  }catch(error){
+   setFeedback(feedback,'Não foi possível editar o filme: '+error.message,'error');
+   button.disabled=false;button.textContent='Salvar alterações';
+  }
  });
 }
 document.addEventListener('DOMContentLoaded',()=>{setupCatalog();setupSeats();setupCheckout();setupTickets();setupAdmin()});
