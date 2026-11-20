@@ -1,0 +1,10 @@
+CREATE TABLE usuarios (
+    id UUID PRIMARY KEY,
+    email VARCHAR(180) NOT NULL UNIQUE,
+    senha_hash VARCHAR(100) NOT NULL,
+    perfil VARCHAR(20) NOT NULL CHECK (perfil IN ('ADMIN')),
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    criado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_usuarios_email ON usuarios (LOWER(email));

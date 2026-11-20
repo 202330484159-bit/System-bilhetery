@@ -1,4 +1,4 @@
-const API_BASE_URL = window.CINETICKETS_API_URL || 'https://super-funicular-jrq6j9v7j6w5cqgx5-8080.app.github.dev';
+const API_BASE_URL = (window.CINETICKETS_API_URL || 'https://cinetickets-api-eqww.onrender.com').replace(/\/+$/, '');
 const money = value => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value);
 const read = (key,fallback) => {try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch{return fallback}};
 const save = (key,value) => localStorage.setItem(key,JSON.stringify(value));
@@ -33,6 +33,7 @@ const mapMovie = film => ({
  active: film.ativo
 });
 function escapeHTML(value){return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+const normalizeText = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
 function setFeedback(element, message, type = 'info') {
  if (!element) return;
  element.textContent = message;
@@ -41,9 +42,14 @@ function setFeedback(element, message, type = 'info') {
 }
 function renderMovies(){
  const grid=document.querySelector('#movie-grid'); if(!grid)return;
- const query=(document.querySelector('#movie-search')?.value||'').toLocaleLowerCase('pt-BR');
+ const query=normalizeText(document.querySelector('#movie-search')?.value||'');
  const genre=document.querySelector('.chip.selected')?.dataset.genre||'Todos';
- const list=catalogMovies.filter(m=>(genre==='Todos'||m.genre===genre)&&(m.title+' '+m.genre).toLocaleLowerCase('pt-BR').includes(query));
+ const selectedGenre=normalizeText(genre);
+ const list=catalogMovies.filter(m=>{
+  const movieGenre=normalizeText(m.genre);
+  const matchesGenre=genre==='Todos'||movieGenre===selectedGenre||(selectedGenre==='ficcao'&&movieGenre.startsWith('ficcao'));
+  return matchesGenre&&normalizeText(m.title+' '+m.genre).includes(query);
+ });
  grid.innerHTML=list.map(m=>`<article class="movie-card"><div class="poster" style="--poster-a:${m.colors[0]};--poster-b:${m.colors[1]}"><span class="poster-symbol">${m.symbol}</span><span class="poster-tag">${escapeHTML(m.rating||'Livre')}</span></div><div class="movie-info"><h3>${escapeHTML(m.title)}</h3><div class="movie-meta">${escapeHTML(m.genre)} · ${Number(m.duration)||110} min</div><div class="movie-bottom"><span class="rating">★ ${m.score}</span><a class="button button-primary" href="pages/assentos.html?movie=${encodeURIComponent(m.id)}">Ver sessões →</a></div></div></article>`).join('')||'<p class="muted">Nenhum filme encontrado. Tente outra busca.</p>';
  const count=document.querySelector('#movie-count');
  if(count) count.textContent=`${list.length} título(s)`;
@@ -88,10 +94,12 @@ async function setupSeats(){
   title.textContent=movie.title;
   document.querySelector('#seat-session-label').textContent=`${session.date} · ${session.time} · ${session.roomType} · ${session.format}`;
   const occupied=new Set(['A4','A5','B7','C3','D8','E2','F6','G5']);
-  let selected=new Set(read('ct-selected-seats',[]));
+  const selectionKey=`ct-selected-seats:${movie.id}`;
+  const storedSeats=read(selectionKey,[]);
+  let selected=new Set(Array.isArray(storedSeats)?storedSeats.filter(id=>typeof id==='string'&&/^[A-H](?:[1-9]|10)$/.test(id)).slice(0,6):[]);
   const rows='ABCDEFGH'.split('');
   map.innerHTML=rows.map((row,ri)=>`<div class="seat-row"><span class="row-label">${row}</span>${Array.from({length:10},(_,i)=>{const id=row+(i+1),premium=ri>=6;return `<button class="seat ${premium?'premium':''} ${occupied.has(id)?'occupied':''} ${selected.has(id)?'selected':''}" data-seat="${id}" ${occupied.has(id)?'disabled':''} aria-label="Poltrona ${id}">${i+1}</button>`}).join('')}</div>`).join('');
-  const update=()=>{map.querySelectorAll('[data-seat]').forEach(b=>b.classList.toggle('selected',selected.has(b.dataset.seat)));document.querySelector('#selected-seats').textContent=selected.size?[...selected].sort().join(', '):'Nenhum assento';document.querySelector('#seat-total').textContent=money([...selected].reduce((sum,id)=>sum+(id[0]>='G'?42:30),0));continueButton.disabled=!selected.size;save('ct-selected-seats',[...selected]);};
+  const update=()=>{map.querySelectorAll('[data-seat]').forEach(b=>b.classList.toggle('selected',selected.has(b.dataset.seat)));document.querySelector('#selected-seats').textContent=selected.size?[...selected].sort().join(', '):'Nenhum assento';document.querySelector('#seat-total').textContent=money([...selected].reduce((sum,id)=>sum+(id[0]>='G'?42:30),0));continueButton.disabled=!selected.size;save(selectionKey,[...selected]);};
   map.addEventListener('click',e=>{const b=e.target.closest('[data-seat]');if(!b||b.disabled)return;if(selected.has(b.dataset.seat))selected.delete(b.dataset.seat);else if(selected.size<6)selected.add(b.dataset.seat);else alert('Você pode selecionar até 6 assentos por pedido.');update()});
   continueButton.addEventListener('click',()=>{save('ct-order',{movie:movie.title,movieId:movie.id,session,seats:[...selected],createdAt:new Date().toISOString()});location.href='checkout.html'});
   update();
@@ -103,17 +111,35 @@ async function setupSeats(){
 }
 function setupCheckout(){
  const form=document.querySelector('#checkout-form');if(!form)return;
- const order=read('ct-order',null),seats=order?.seats||[];
- if(!order||!seats.length){document.querySelector('#checkout-summary').innerHTML='<p class="muted">Nenhuma seleção encontrada. Volte ao catálogo e escolha seus lugares.</p>';form.hidden=true;return}
+ const order=read('ct-order',null);
+ const seats=Array.isArray(order?.seats)?order.seats.filter(id=>typeof id==='string'&&/^[A-H](?:[1-9]|10)$/.test(id)).slice(0,6):[];
+ if(!order||!order.movieId||!order.session||!seats.length){document.querySelector('#checkout-summary').innerHTML='<p class="muted">Nenhuma seleção encontrada. Volte ao catálogo e escolha seus lugares.</p>';form.hidden=true;return}
  const total=seats.reduce((sum,id)=>sum+(id[0]>='G'?42:30),0);
- document.querySelector('#checkout-summary').innerHTML=`<div class="summary-row"><span>Filme</span><strong>${escapeHTML(order.movie)}</strong></div><div class="summary-row"><span>Sessão</span><strong>${escapeHTML(order.session.time)} · ${escapeHTML(order.session.format)}</strong></div><div class="summary-row"><span>Assentos</span><strong>${seats.join(', ')}</strong></div><div class="summary-row"><span>Ingressos</span><strong>${seats.length} ×</strong></div>`;
+ document.querySelector('#checkout-summary').innerHTML=`<div class="summary-row"><span>Filme</span><strong>${escapeHTML(order.movie)}</strong></div><div class="summary-row"><span>Sessão</span><strong>${escapeHTML(order.session.time)} · ${escapeHTML(order.session.format)}</strong></div><div class="summary-row"><span>Assentos</span><strong>${escapeHTML(seats.join(', '))}</strong></div><div class="summary-row"><span>Ingressos</span><strong>${seats.length} ×</strong></div>`;
  document.querySelector('#checkout-total').textContent=money(total);
- form.addEventListener('submit',e=>{e.preventDefault();const tickets=read('ct-tickets',[]);const ticket={...order,total,name:document.querySelector('#customer-name').value.trim(),email:document.querySelector('#customer-email').value.trim(),code:'CT-'+Math.random().toString(36).slice(2,8).toUpperCase()};save('ct-tickets',[ticket,...tickets]);save('ct-selected-seats',[]);location.href='ingressos.html?confirmed=1'});
+ form.addEventListener('submit',e=>{
+  e.preventDefault();
+  const button=form.querySelector('button[type="submit"]');
+  if(button.disabled)return;
+  button.disabled=true;
+  const tickets=read('ct-tickets',[]);
+  const safeTickets=Array.isArray(tickets)?tickets:[];
+  const ticket={...order,total,name:document.querySelector('#customer-name').value.trim(),email:document.querySelector('#customer-email').value.trim(),code:'CT-'+Math.random().toString(36).slice(2,8).toUpperCase()};
+  try{
+   save('ct-tickets',[ticket,...safeTickets]);
+   localStorage.removeItem(`ct-selected-seats:${order.movieId}`);
+   localStorage.removeItem('ct-order');
+   location.href='ingressos.html?confirmed=1';
+  }catch(error){
+   button.disabled=false;
+   setFeedback(document.querySelector('#checkout-summary'),'Não foi possível salvar o ingresso neste navegador. Verifique o armazenamento local e tente novamente.','error');
+  }
+ });
 }
 function setupTickets(){
- const list=document.querySelector('#tickets-list');if(!list)return;const tickets=read('ct-tickets',[]);
+ const list=document.querySelector('#tickets-list');if(!list)return;const storedTickets=read('ct-tickets',[]);const tickets=Array.isArray(storedTickets)?storedTickets:[];
  if(new URLSearchParams(location.search).has('confirmed'))list.insertAdjacentHTML('beforebegin','<div class="notice">Ingresso demonstrativo confirmado! Você pode consultar os detalhes abaixo.</div>');
- list.innerHTML=tickets.length?tickets.map(t=>`<article class="ticket-item"><div><strong>${escapeHTML(t.movie)}</strong><p>${escapeHTML(t.session.date)} · ${escapeHTML(t.session.time)} · Assentos: ${t.seats.join(', ')}</p><p>${escapeHTML(t.name)} · ${money(t.total)}</p></div><span class="ticket-code">${escapeHTML(t.code)}</span></article>`).join(''):'<div class="panel"><p class="muted">Você ainda não tem ingressos confirmados neste navegador.</p><a class="button button-primary" href="../index.html">Explorar filmes →</a></div>';
+ list.innerHTML=tickets.length?tickets.map(t=>`<article class="ticket-item"><div><strong>${escapeHTML(t.movie)}</strong><p>${escapeHTML(t.session.date)} · ${escapeHTML(t.session.time)} · Assentos: ${escapeHTML(Array.isArray(t.seats)?t.seats.join(', '):'')}</p><p>${escapeHTML(t.name)} · ${money(t.total)}</p></div><span class="ticket-code">${escapeHTML(t.code)}</span></article>`).join(''):'<div class="panel"><p class="muted">Você ainda não tem ingressos confirmados neste navegador.</p><a class="button button-primary" href="../index.html">Explorar filmes →</a></div>';
 }
 function renderAdminMovies(films) {
  const list=document.querySelector('#admin-movie-list'); if(!list)return;
