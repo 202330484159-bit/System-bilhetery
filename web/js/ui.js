@@ -15,7 +15,7 @@
   const genre=norm(card.querySelector('.movie-meta')?.textContent.split('·')[0]).trim();
   const key=Object.keys(PALETTES).find(k=>genre.startsWith(k))||'default';
   const [a,b,sym]=PALETTES[key],p=card.querySelector('.poster');if(!p)return;
-  p.style.setProperty('--poster-a',\`color-mix(in srgb,\${a} 80%,hsl(\${hue(card.querySelector('h3')?.textContent||'')} 70% 50%) 20%)\`);
+  p.style.setProperty('--poster-a',`color-mix(in srgb,${a} 80%,hsl(${hue(card.querySelector('h3')?.textContent||'')} 70% 50%) 20%)`);
   p.style.setProperty('--poster-b',b);
   const s=p.querySelector('.poster-symbol');if(s)s.textContent=sym;
  });
