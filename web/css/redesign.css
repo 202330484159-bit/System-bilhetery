@@ -54,3 +54,5 @@ body{background:radial-gradient(60% 40% at 85% -5%,rgba(74,148,255,.20),transpar
 @media(max-width:850px){.movie-grid{grid-template-columns:repeat(2,1fr)}.main-nav{font-size:13px}}
 @media(max-width:600px){.main-nav{display:flex;overflow-x:auto;gap:2px;max-width:50vw}.hero{min-height:0;padding:44px 0 24px}.hero-copy p{font-size:15px}.movie-grid{gap:12px}.poster{height:190px}.poster-symbol{font-size:60px}.seat{width:26px;height:30px;font-size:10px}.seat-row{gap:4px}.section-head h2{font-size:28px}.toast-wrap{left:14px;right:14px}.admin-link{display:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* Respeita o atributo HTML hidden mesmo quando componentes definem display:grid/flex. */
+[hidden]{display:none!important}
