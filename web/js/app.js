@@ -137,7 +137,7 @@ function setupCheckout(){
  });
 }
 function setupTickets(){
- const list=document.querySelector('#tickets-list');if(!list)return;const tickets=read('ct-tickets',[]);
+ const list=document.querySelector('#tickets-list');if(!list)return;const storedTickets=read('ct-tickets',[]);const tickets=Array.isArray(storedTickets)?storedTickets:[];
  if(new URLSearchParams(location.search).has('confirmed'))list.insertAdjacentHTML('beforebegin','<div class="notice">Ingresso demonstrativo confirmado! Você pode consultar os detalhes abaixo.</div>');
  list.innerHTML=tickets.length?tickets.map(t=>`<article class="ticket-item"><div><strong>${escapeHTML(t.movie)}</strong><p>${escapeHTML(t.session.date)} · ${escapeHTML(t.session.time)} · Assentos: ${escapeHTML(Array.isArray(t.seats)?t.seats.join(', '):'')}</p><p>${escapeHTML(t.name)} · ${money(t.total)}</p></div><span class="ticket-code">${escapeHTML(t.code)}</span></article>`).join(''):'<div class="panel"><p class="muted">Você ainda não tem ingressos confirmados neste navegador.</p><a class="button button-primary" href="../index.html">Explorar filmes →</a></div>';
 }
