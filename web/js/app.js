@@ -1,4 +1,4 @@
-const API_BASE_URL = (window.CINETICKETS_API_URL || (window.location.hostname.endsWith('-5500.app.github.dev') ? `${window.location.protocol}//${window.location.hostname.replace(/-5500\.app\.github\.dev$/, '-8080.app.github.dev')}` : 'http://localhost:8080'));
+const API_BASE_URL = (window.CINETICKETS_API_URL || 'https://cinetickets-api-eqww.onrender.com').replace(/\/+$/, '');
 const money = value => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(value);
 const read = (key,fallback) => {try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch{return fallback}};
 const save = (key,value) => localStorage.setItem(key,JSON.stringify(value));
