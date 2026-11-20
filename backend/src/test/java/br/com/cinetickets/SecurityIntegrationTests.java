@@ -47,6 +47,15 @@ class SecurityIntegrationTests {
     }
 
     @Test
+    void senhaAcimaDoLimiteDoBcryptERejeitada() throws Exception {
+        String senhaLonga = "a".repeat(73);
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "email", "nao-existe@cinetickets.local", "senha", senhaLonga))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void administradorAutenticadoPodeCadastrarFilme() throws Exception {
         String token = criarAdminEObterToken();
         mockMvc.perform(post("/api/filmes").header("Authorization", "Bearer " + token)
@@ -63,7 +72,6 @@ class SecurityIntegrationTests {
         String token = obterToken(email, senha);
         usuario.desativar();
         usuarios.save(usuario);
-
         mockMvc.perform(post("/api/filmes").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content(filmeValido()))
                 .andExpect(status().isUnauthorized());

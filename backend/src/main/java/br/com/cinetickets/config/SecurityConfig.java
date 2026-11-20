@@ -18,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -46,7 +47,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/filmes/*").permitAll()
                         .requestMatchers("/api/**").hasRole("ADMIN")
                         .anyRequest().denyAll())
-                .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtFilter,
+                        org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -76,8 +78,11 @@ public class SecurityConfig {
             @Value("${app.admin.password:}") String senha) {
         return args -> {
             if (email.isBlank() && senha.isBlank()) return;
-            if (email.isBlank() || senha.isBlank() || senha.length() < 12)
-                throw new IllegalStateException("Configure ADMIN_EMAIL e ADMIN_PASSWORD (mínimo de 12 caracteres).");
+            int passwordBytes = senha.getBytes(StandardCharsets.UTF_8).length;
+            if (email.isBlank() || senha.isBlank() || senha.length() < 12 || passwordBytes > 72) {
+                throw new IllegalStateException(
+                        "Configure ADMIN_EMAIL e ADMIN_PASSWORD (12 a 72 bytes UTF-8).");
+            }
             if (!usuarios.existsByEmailIgnoreCase(email.trim()))
                 usuarios.save(new Usuario(email, encoder.encode(senha), "ADMIN"));
         };
