@@ -18,11 +18,17 @@ public class Usuario {
     private boolean ativo = true;
 
     protected Usuario() {}
+
     public Usuario(String email, String senhaHash, String perfil) {
         this.email = email.toLowerCase().trim();
         this.senhaHash = senhaHash;
         this.perfil = perfil;
     }
+
+    public void desativar() {
+        this.ativo = false;
+    }
+
     public UUID getId() { return id; }
     public String getEmail() { return email; }
     public String getSenhaHash() { return senhaHash; }

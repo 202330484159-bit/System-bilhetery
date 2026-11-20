@@ -11,25 +11,33 @@ import java.util.Date;
 
 @Service
 public class JwtService {
+    private static final long MAX_EXPIRATION_MINUTES = 24 * 60;
     private final SecretKey key;
     private final long expirationSeconds;
 
     public JwtService(@Value("${app.jwt.secret}") String secret,
                       @Value("${app.jwt.expiration-minutes:60}") long expirationMinutes) {
         byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
-        if (bytes.length < 32) throw new IllegalArgumentException("JWT_SECRET deve ter pelo menos 32 bytes.");
+        if (bytes.length < 32)
+            throw new IllegalArgumentException("JWT_SECRET deve ter pelo menos 32 bytes.");
+        if (expirationMinutes < 1 || expirationMinutes > MAX_EXPIRATION_MINUTES)
+            throw new IllegalArgumentException("JWT_EXPIRATION_MINUTES deve estar entre 1 e 1440.");
         this.key = Keys.hmacShaKeyFor(bytes);
-        this.expirationSeconds = expirationMinutes * 60;
-        if (expirationSeconds < 60) throw new IllegalArgumentException("A validade do JWT deve ser de pelo menos 1 minuto.");
+        this.expirationSeconds = Math.multiplyExact(expirationMinutes, 60L);
     }
+
     public String gerar(String email, String perfil) {
         Instant agora = Instant.now();
         return Jwts.builder().subject(email).claim("perfil", perfil)
-            .issuedAt(Date.from(agora)).expiration(Date.from(agora.plusSeconds(expirationSeconds)))
-            .signWith(key).compact();
+                .issuedAt(Date.from(agora))
+                .expiration(Date.from(agora.plusSeconds(expirationSeconds)))
+                .signWith(key).compact();
     }
+
     public String extrairEmail(String token) {
-        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload().getSubject();
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token)
+                .getPayload().getSubject();
     }
+
     public long getExpirationSeconds() { return expirationSeconds; }
 }
