@@ -48,6 +48,16 @@
    logout.hidden = false;
   };
 
+  const tokenExpired = () => {
+   try {
+    const payload = JSON.parse(atob(token().split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return !payload.exp || payload.exp * 1000 <= Date.now();
+   } catch {
+    return true;
+   }
+  };
+  if (token() && tokenExpired()) sessionStorage.removeItem(TOKEN_KEY);
+
   if (token()) showAuthenticated();
   else {
    login.hidden = false;
