@@ -8,7 +8,10 @@ RUN mvn -B -DskipTests package
 # Small Java 21 runtime image.
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=build /workspace/target/cinetickets-api-0.1.0-SNAPSHOT.jar /app/app.jar
+RUN groupadd --system --gid 10001 cinetickets \
+    && useradd --system --uid 10001 --gid cinetickets --home-dir /home/cinetickets --create-home cinetickets
+COPY --from=build --chown=10001:10001 /workspace/target/cinetickets-api-0.1.0-SNAPSHOT.jar /app/app.jar
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -XX:InitialRAMPercentage=20 -XX:+UseSerialGC"
 EXPOSE 8080
+USER 10001:10001
 CMD ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar /app/app.jar"]
