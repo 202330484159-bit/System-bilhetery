@@ -13,7 +13,7 @@ async function apiRequest(path, options = {}) {
  });
  if (!response.ok) {
   let detail = '';
-  try { const body = await response.json(); detail = body.message || body.detail || ''; } catch {}
+  try { const body = await response.json(); detail = body.mensagem || body.message || body.detail || (Array.isArray(body.campos) ? body.campos.map(c => c.campo + ': ' + c.mensagem).join('; ') : ''); } catch {}
   throw new Error(detail || `A API respondeu com HTTP ${response.status}.`);
  }
  if (response.status === 204) return null;
@@ -256,7 +256,7 @@ function setupAdmin(){
   if(!payload.titulo||!payload.genero||!payload.classificacaoIndicativa||!payload.sinopse||!Number.isInteger(payload.duracaoMinutos)||payload.duracaoMinutos<1||payload.duracaoMinutos>600){
    setFeedback(feedback,'Revise os campos. A duração deve estar entre 1 e 600 minutos.','error');return;
   }
-  button.disabled=true;button.textContent='Salvando...';
+  button.disabled=true;button.textContent='Salvando alterações';
   try{
    await apiRequest(`/api/filmes/${encodeURIComponent(movie.id)}`,{method:'PUT',body:JSON.stringify(payload)});
    setFeedback(feedback,`Filme "${payload.titulo}" atualizado com sucesso.`);
