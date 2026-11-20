@@ -1,0 +1,56 @@
+/* CineTickets — camada de redesign (carregada depois de styles.css) */
+:root{--bg:#060d19;--panel:#0f1b2d;--line:rgba(160,196,236,.14);--text:#f4f8ff;--muted:#a4b4c8;--blue:#4a94ff;--cyan:#5ee0f0;--violet:#8b7bff;--green:#5fe0b4;--gold:#f2c46d;--radius:22px;--ease:cubic-bezier(.2,.7,.2,1)}
+body{background:radial-gradient(60% 40% at 85% -5%,rgba(74,148,255,.20),transparent 70%),radial-gradient(45% 35% at 5% 15%,rgba(139,123,255,.12),transparent 70%),var(--bg);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+::selection{background:#2d6fd6;color:#fff}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:8px}
+.topbar{height:72px;background:rgba(6,13,25,.72);backdrop-filter:blur(20px) saturate(1.4);transition:box-shadow .3s}
+.topbar.scrolled{box-shadow:0 12px 40px rgba(0,0,0,.45)}
+.brand{font-size:15px}.brand-mark{background:linear-gradient(145deg,#6cb0ff,#7d6bff);box-shadow:0 8px 28px rgba(110,130,255,.45)}
+.main-nav{font-size:14px;gap:6px}.main-nav a{padding:9px 14px;border-radius:99px;transition:.2s}.main-nav a:hover{background:rgba(255,255,255,.06)}.main-nav a.active{background:rgba(74,148,255,.16);color:#fff}
+.admin-link{font-size:13px}.avatar{background:linear-gradient(145deg,#1d3d66,#2c2a66);border-color:#3b5f8c;transition:.2s}.avatar:hover{transform:scale(1.06)}
+.eyebrow{font-size:12px;letter-spacing:2.2px;color:var(--cyan)}
+.hero{min-height:520px;padding:72px 0 80px}
+.hero h1{letter-spacing:-2.5px}.hero h1 span{background:linear-gradient(95deg,#7cc0ff,#a99cff 60%,#7ef0dc);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-copy p,.section-head p,.experience-strip p{font-size:17px;color:var(--muted);max-width:480px}
+.button{font-size:14px;padding:15px 22px;border-radius:14px;transition:transform .25s var(--ease),box-shadow .25s,filter .2s}
+.button-primary{background:linear-gradient(110deg,#4a94ff,#6b6bff);box-shadow:0 12px 32px rgba(74,120,255,.38)}
+.button-primary:hover{box-shadow:0 16px 40px rgba(94,120,255,.55)}.button:active{transform:translateY(0) scale(.98)}
+.hero-art .orb-one{background:radial-gradient(circle at 35% 30%,#5b8fff,#1c1f55 68%);box-shadow:0 0 120px rgba(110,110,255,.4);animation:float 9s ease-in-out infinite}
+.ticket-art{background:linear-gradient(145deg,#f1f6ff,#a9c4ee 60%,#b7a9f5);animation:float 7s ease-in-out infinite reverse;width:180px;height:240px}
+.ticket-art span,.ticket-art small{font-size:10px}.hero-stamp{font-size:10px;color:#8fb2d8}
+@keyframes float{50%{transform:translateY(-12px) rotate(8deg)}}
+.section-head{margin:64px 0 26px}.section-head h2{font-size:34px}
+.search-box{width:290px;padding:13px 16px;background:rgba(255,255,255,.04);transition:.2s}.search-box:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px rgba(74,148,255,.18)}.search-box input{font-size:14px}
+.chip{font-size:13px;padding:9px 17px;transition:.2s}.chip.selected{background:linear-gradient(110deg,#2563c9,#5a55d6);border-color:transparent;color:#fff}
+.muted{color:var(--muted)}.small{font-size:12px}
+.movie-grid{gap:22px}
+.movie-card{border-radius:20px;background:linear-gradient(170deg,#142238,#0b1626);box-shadow:0 10px 30px rgba(0,0,0,.3);animation:rise .5s var(--ease) both;transition:transform .35s var(--ease),border-color .3s,box-shadow .3s}
+.movie-card:hover{transform:translateY(-8px);border-color:rgba(122,160,255,.55);box-shadow:0 24px 50px rgba(30,50,140,.35)}
+.movie-card:nth-child(2){animation-delay:.05s}.movie-card:nth-child(3){animation-delay:.1s}.movie-card:nth-child(4){animation-delay:.15s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.poster{height:250px}.poster-symbol{font-size:84px;top:40px;transition:transform .5s var(--ease)}.movie-card:hover .poster-symbol{transform:scale(1.12) rotate(-4deg)}
+.poster-tag{font-size:11px;padding:7px 11px;border-radius:99px;backdrop-filter:blur(8px);background:rgba(6,13,25,.6)}
+.movie-info{padding:18px}.movie-info h3{font-size:17px}.movie-meta{font-size:13px}.rating{font-size:13px;color:var(--gold)}.movie-bottom .button{padding:10px 14px;font-size:12px}
+.skeleton{border-radius:20px;height:380px;background:linear-gradient(100deg,#0e1a2c 30%,#16273f 50%,#0e1a2c 70%);background-size:200% 100%;animation:shimmer 1.3s linear infinite;border:1px solid var(--line)}
+@keyframes shimmer{to{background-position:-200% 0}}
+.experience-strip{background:linear-gradient(110deg,rgba(37,99,201,.28),rgba(90,85,214,.22));border-color:rgba(120,150,255,.35);padding:38px 40px}.experience-tags{font-size:14px}
+.site-footer{font-size:13px}
+.page-title{letter-spacing:-1.5px}.back-link{font-size:14px;transition:.2s}.back-link:hover{color:#fff;transform:translateX(-3px)}
+.panel{background:linear-gradient(150deg,rgba(24,40,64,.9),rgba(11,22,38,.95));box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.screen{height:6px;box-shadow:0 14px 50px rgba(120,180,255,.55);font-size:11px;color:#8aa6c6}.screen-glow{height:70px;background:rgba(90,150,255,.18)}
+.seat-legend{font-size:12px}.seat-dot{width:12px;height:12px}.seat-map{gap:10px}.seat-row{gap:8px}.row-label{font-size:12px;width:18px}
+.seat{width:36px;height:34px;font-size:11px;transition:transform .15s,background .2s,box-shadow .2s}.seat:not(.occupied):hover{transform:translateY(-2px);background:#25507d}
+.seat.selected{background:linear-gradient(145deg,#4a94ff,#6b6bff);box-shadow:0 0 16px rgba(94,120,255,.7)}
+.seat-bottom strong{font-size:15px}.total-price{font-size:20px!important;color:#8fd0ff}
+.notice{font-size:14px;border-radius:14px;background:rgba(74,148,255,.08);border-color:rgba(74,148,255,.3);color:#b9cde3}
+.notice.error{background:rgba(255,90,110,.1);border-color:rgba(255,110,125,.5);color:#ffc2ca}
+.summary-row{font-size:14px}.field-label{font-size:13px}.text-field{font-size:15px;padding:14px;border-radius:12px;background:rgba(5,12,22,.8);transition:.2s}.text-field:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(74,148,255,.18)}
+.ticket-item{position:relative;padding:24px 26px;border-radius:18px;background:linear-gradient(120deg,#15263f,#101d31);border-left:4px solid var(--blue)}
+.ticket-item strong{font-size:18px}.ticket-item p{font-size:13px}.ticket-code{font-size:15px;padding:10px 14px;border:1px dashed #4a6f9c;border-radius:10px;letter-spacing:2px}
+.admin-pill{font-size:11px}.admin-card h2{font-size:22px}.admin-card p,.admin-info{font-size:14px}.admin-info strong{font-size:14px}
+.admin-action{font-size:12px;padding:9px 13px;border-radius:10px;transition:.2s}.admin-action-primary{background:linear-gradient(110deg,#2f6fd8,#5a55d6)}
+#admin-login{animation:rise .5s var(--ease) both}
+.toast-wrap{position:fixed;right:20px;bottom:20px;display:grid;gap:10px;z-index:50}.toast{padding:14px 18px;border-radius:14px;background:#12233b;border:1px solid #3a6396;color:#e8f2ff;font-size:14px;box-shadow:0 16px 40px rgba(0,0,0,.5);animation:rise .3s var(--ease)}
+@media(max-width:850px){.movie-grid{grid-template-columns:repeat(2,1fr)}.main-nav{font-size:13px}}
+@media(max-width:600px){.main-nav{display:flex;overflow-x:auto;gap:2px;max-width:50vw}.hero{min-height:0;padding:44px 0 24px}.hero-copy p{font-size:15px}.movie-grid{gap:12px}.poster{height:190px}.poster-symbol{font-size:60px}.seat{width:26px;height:30px;font-size:10px}.seat-row{gap:4px}.section-head h2{font-size:28px}.toast-wrap{left:14px;right:14px}.admin-link{display:none}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
