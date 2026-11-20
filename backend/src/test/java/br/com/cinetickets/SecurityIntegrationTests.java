@@ -16,7 +16,8 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.util.Map;
 import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;\nimport static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -30,7 +31,29 @@ class SecurityIntegrationTests {
 
     @Test
     void catalogoAtivoPermanecePublico() throws Exception {
-        mockMvc.perform(get("/api/filmes")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/filmes"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("Referrer-Policy", "strict-origin-when-cross-origin"));
+    }
+
+    @Test
+    void corsPermiteOrigemConfigurada() throws Exception {
+        mockMvc.perform(options("/api/auth/login")
+                        .header("Origin", "http://localhost:5500")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "content-type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5500"));
+    }
+
+    @Test
+    void corsNaoRefleteOrigemNaoConfigurada() throws Exception {
+        mockMvc.perform(options("/api/auth/login")
+                        .header("Origin", "https://origem-nao-autorizada.example")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 
     @Test
