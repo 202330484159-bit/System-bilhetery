@@ -1,61 +1,48 @@
 # CineTickets API
 
-Backend REST em Java 21 + Spring Boot 3.5 + PostgreSQL.
+Backend REST em Java 21 + Spring Boot + PostgreSQL.
 
 ## Requisitos
 - JDK 21
 - Maven 3.9+
-- Conta/projeto Supabase (ou PostgreSQL local para desenvolvimento offline)
+- Projeto Supabase (recomendado) ou PostgreSQL local
 
-## Conexão com Supabase (recomendado)
+## Conexão com Supabase
+1. No Supabase, abra Connect → Session Pooler → JDBC e copie a URL JDBC.
+2. Confirme que a conexão usa SSL (sslmode=require) e a porta do Session Pooler (5432).
+3. No GitHub, abra Settings → Secrets and variables → Codespaces e crie o secret DB_URL com a URL JDBC completa.
+4. Reinicie o Codespace para carregar o secret.
 
-O banco hospedado substitui a necessidade de iniciar PostgreSQL localmente no Codespaces.
+A URL JDBC contém credenciais. Nunca a coloque no código, commits, prints ou mensagens. Não compartilhe DB_URL, JWT_SECRET ou senhas.
 
-1. Abra o projeto [CineTickets no Supabase](https://supabase.com/dashboard/project/ngpyocrtflfrszqczikb).
-2. Clique em **Connect**.
-3. Em **Session pooler**, selecione a aba **JDBC** e copie a URL.
-4. Confirme que a URL contém `sslmode=require`. Use Session Pooler na porta `5432`; não use Transaction Pooler (`6543`) como datasource principal do Hibernate.
-5. No GitHub, abra **Settings → Secrets and variables → Codespaces → New repository secret** e crie:
-   - Nome: `DB_URL`
-   - Valor: a URL JDBC completa copiada do Supabase, substituindo o marcador de senha pela senha do banco.
-6. Reinicie o Codespace para carregar o secret.
-
-A URL completa contém usuário e senha. **Nunca** coloque esse valor no código, em commits, prints ou mensagens. Se a senha tiver caracteres reservados (por exemplo `@`, `#`, `&` ou espaços), faça percent-encoding antes de inseri-la na URL. Se não souber a senha, redefina-a em **Supabase → Project Settings → Database** e atualize o secret.
-
-Para o backend publicado, configure o mesmo `DB_URL` como variável secreta no serviço de hospedagem do backend. Secrets do Codespaces não são automaticamente compartilhados com a hospedagem.
-
-### Inicialização no Codespaces
-
-Na pasta `backend/`:
+Na pasta backend, inicie a API com:
 
 ```bash
 mvn spring-boot:run
 ```
 
-Não é necessário executar `docker compose up` quando `DB_URL` aponta para o Supabase. Sem `DB_URL`, a configuração mantém o fallback local `jdbc:postgresql://localhost:5432/cinetickets`.
+O backend não precisa de banco local quando DB_URL aponta para o Supabase.
 
-### Flyway e banco já provisionado
+## Configuração
+Configure por variáveis de ambiente:
+- DB_URL: URL JDBC completa do banco.
+- CORS_ALLOWED_ORIGINS: origens exatas do frontend, separadas por vírgula.
+- JWT_SECRET: segredo aleatório com pelo menos 32 bytes. É obrigatório; não existe segredo padrão seguro.
+- JWT_EXPIRATION_MINUTES: validade do token, entre 1 e 1440 minutos (padrão 60).
+- ADMIN_EMAIL e ADMIN_PASSWORD: credenciais para criar o primeiro administrador; senha com no mínimo 12 caracteres e no máximo 72 bytes UTF-8.
 
-As tabelas `filmes` e `usuarios` já foram criadas no projeto Supabase a partir das migrações V1 e V2 do repositório. Por isso, a configuração inicial do Flyway usa baseline na versão 2 para esse banco não tentar recriar tabelas existentes. Em um banco vazio, as migrações V1 e V2 continuam sendo executadas normalmente; migrações futuras (V3+) serão aplicadas pelo Flyway.
+Exemplo para gerar segredo: openssl rand -base64 48. Nunca versione o valor real.
 
-O Hibernate usa `ddl-auto: validate`: ele valida o mapeamento, mas não altera o esquema. O backend conecta com o usuário PostgreSQL do Session Pooler; não use chave `service_role` nem chave de API do Supabase como senha do banco.
+O primeiro administrador é criado apenas se o e-mail ainda não existir. A senha é armazenada com BCrypt. Alterar os Secrets depois não redefine a senha de uma conta existente.
 
-## Configuração de segurança
+## Testes automatizados
+Os testes usam H2 em memória e não precisam conectar ao Supabase:
 
-Configure por variáveis de ambiente (não versione valores reais):
-
-- `DB_URL`: URL JDBC completa do Session Pooler, com `sslmode=require`
-- `CORS_ALLOWED_ORIGINS`: origens exatas do frontend, separadas por vírgula
-- `JWT_SECRET`: chave aleatória com pelo menos 32 bytes
-- `JWT_EXPIRATION_MINUTES`: validade do token (padrão 60)
-- `ADMIN_EMAIL` e `ADMIN_PASSWORD`: credenciais iniciais; senha com no mínimo 12 caracteres
-
-Na primeira inicialização, se ADMIN_EMAIL e ADMIN_PASSWORD estiverem definidos, o sistema cria o administrador caso o e-mail ainda não exista. A senha é armazenada com BCrypt. A conta não é recriada nem tem a senha sobrescrita em inicializações seguintes.
-
-Exemplo para gerar segredo local: `openssl rand -base64 48`. Não use os valores de exemplo em produção.
+```bash
+mvn test
+```
 
 ## Endpoints
-
 | Método | Endpoint | Acesso |
 |---|---|---|
 | POST | /api/auth/login | Público |
@@ -66,8 +53,10 @@ Exemplo para gerar segredo local: `openssl rand -base64 48`. Não use os valores
 | PUT | /api/filmes/{id} | ADMIN |
 | DELETE | /api/filmes/{id} | ADMIN |
 
-Após login, envie `Authorization: Bearer <token>` nas requisições administrativas. Tokens são stateless e expiram conforme JWT_EXPIRATION_MINUTES.
+O servidor verifica assinatura, expiração e situação ativa/perfil do usuário no banco em cada requisição protegida.
 
-## Limitações desta etapa
+## Banco de dados
+Flyway controla as migrações. O Hibernate usa ddl-auto: validate, portanto valida o mapeamento sem alterar tabelas automaticamente. A configuração de baseline versão 2 é necessária para o banco Supabase já provisionado nesta instalação; confira o histórico antes de reutilizar em outro banco.
 
-A autenticação administrativa está implementada; cadastro público de clientes, recuperação de senha, revogação antecipada de JWT, salas, sessões, reservas e pagamentos ainda não fazem parte desta entrega. O fluxo de checkout continua demonstrativo e não deve ser tratado como venda real.
+## Limitações funcionais
+Esta entrega cobre autenticação administrativa e catálogo de filmes. Cadastro de clientes, recuperação de senha, revogação antecipada de JWT, salas, sessões, reservas, pagamento e emissão de ingressos ainda não estão implementados. O checkout do frontend é demonstrativo e não processa vendas reais.
