@@ -3,7 +3,13 @@
 Frontend estático em HTML, CSS e JavaScript, sem etapa de build.
 
 ## Executar
-Sirva a pasta web/ por um servidor HTTP local. Configure window.CINETICKETS_API_URL antes de carregar js/app.js para apontar para a URL HTTPS da API. O endereço de Codespaces usado como fallback é temporário e não deve ser utilizado em produção.
+Sirva a pasta web/ por um servidor HTTP local. Configure window.CINETICKETS_API_URL antes de carregar js/admin-auth.js e js/app.js para apontar para a URL HTTPS da API. Por exemplo, inclua um script de configuração antes dos scripts da aplicação:
+
+```html
+<script>window.CINETICKETS_API_URL = "https://sua-api.exemplo.com";</script>
+```
+
+Em produção, substitua o endereço de exemplo pela URL HTTPS real da API. O endereço de Codespaces usado como fallback é temporário e não deve ser utilizado em produção. No backend, configure CORS_ALLOWED_ORIGINS com a origem exata do site (protocolo + domínio + porta, sem caminho), por exemplo `https://seu-site.exemplo.com`. Requisições via curl não validam CORS; faça também um teste no navegador após configurar os dois lados.
 
 ## Estrutura
 - index.html: catálogo público de filmes, busca e filtros.
