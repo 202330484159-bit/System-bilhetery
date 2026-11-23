@@ -13,10 +13,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -43,6 +50,39 @@ class SecurityIntegrationTests {
     void tokenInvalidoRetorna401() throws Exception {
         mockMvc.perform(post("/api/filmes").header("Authorization", "Bearer token-invalido")
                         .contentType(MediaType.APPLICATION_JSON).content(filmeValido()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void tokenExpiradoRetorna401() throws Exception {
+        mockMvc.perform(post("/api/filmes").header("Authorization", "Bearer " + tokenExpirado())
+                        .contentType(MediaType.APPLICATION_JSON).content(filmeValido()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void tokenComAssinaturaAdulteradaRetorna401() throws Exception {
+        String token = criarAdminEObterToken();
+        String[] partes = token.split("\\.");
+        String assinatura = partes[2];
+        String primeiroCaractere = assinatura.startsWith("a") ? "b" : "a";
+        String adulterado = partes[0] + "." + partes[1] + "."
+                + primeiroCaractere + assinatura.substring(1);
+        mockMvc.perform(post("/api/filmes").header("Authorization", "Bearer " + adulterado)
+                        .contentType(MediaType.APPLICATION_JSON).content(filmeValido()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void putAdministrativoSemTokenRetorna401() throws Exception {
+        mockMvc.perform(put("/api/filmes/" + UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON).content(filmeValido()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteAdministrativoSemTokenRetorna401() throws Exception {
+        mockMvc.perform(delete("/api/filmes/" + UUID.randomUUID()))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -94,6 +134,16 @@ class SecurityIntegrationTests {
     void consultaDeInativosSemAdminRetorna403() throws Exception {
         mockMvc.perform(get("/api/filmes").param("todos", "true"))
                 .andExpect(status().isForbidden());
+    }
+
+    private String tokenExpirado() {
+        byte[] secret = "test-only-secret-for-cinetickets-integration-tests-123456"
+                .getBytes(StandardCharsets.UTF_8);
+        Instant expirado = Instant.now().minusSeconds(120);
+        return Jwts.builder().subject("admin-expirado@cinetickets.local")
+                .issuedAt(Date.from(expirado.minusSeconds(60)))
+                .expiration(Date.from(expirado))
+                .signWith(Keys.hmacShaKeyFor(secret)).compact();
     }
 
     private String criarAdminEObterToken() throws Exception {
