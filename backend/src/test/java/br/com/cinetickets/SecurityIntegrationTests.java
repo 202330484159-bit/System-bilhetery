@@ -56,8 +56,11 @@ class SecurityIntegrationTests {
     @Test
     void tokenComAssinaturaAdulteradaRetorna401() throws Exception {
         String token = criarAdminEObterToken();
-        String adulterado = token.substring(0, token.length() - 1)
-                + (token.endsWith("a") ? "b" : "a");
+        String[] partes = token.split("\\.");
+        String assinatura = partes[2];
+        String primeiroCaractere = assinatura.startsWith("a") ? "b" : "a";
+        String adulterado = partes[0] + "." + partes[1] + "."
+                + primeiroCaractere + assinatura.substring(1);
         mockMvc.perform(post("/api/filmes").header("Authorization", "Bearer " + adulterado)
                         .contentType(MediaType.APPLICATION_JSON).content(filmeValido()))
                 .andExpect(status().isUnauthorized());
