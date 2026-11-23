@@ -47,6 +47,36 @@ class SecurityIntegrationTests {
     }
 
     @Test
+    void tokenExpiradoRetorna401() throws Exception {
+        mockMvc.perform(post("/api/filmes").header("Authorization", "Bearer " + tokenExpirado())
+                        .contentType(MediaType.APPLICATION_JSON).content(filmeValido()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void tokenComAssinaturaAdulteradaRetorna401() throws Exception {
+        String token = criarAdminEObterToken();
+        String adulterado = token.substring(0, token.length() - 1)
+                + (token.endsWith("a") ? "b" : "a");
+        mockMvc.perform(post("/api/filmes").header("Authorization", "Bearer " + adulterado)
+                        .contentType(MediaType.APPLICATION_JSON).content(filmeValido()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void putAdministrativoSemTokenRetorna401() throws Exception {
+        mockMvc.perform(put("/api/filmes/" + UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON).content(filmeValido()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteAdministrativoSemTokenRetorna401() throws Exception {
+        mockMvc.perform(delete("/api/filmes/" + UUID.randomUUID()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void senhaAcimaDoLimiteDoBcryptERejeitada() throws Exception {
         String senhaLonga = "a".repeat(73);
         mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
@@ -94,6 +124,16 @@ class SecurityIntegrationTests {
     void consultaDeInativosSemAdminRetorna403() throws Exception {
         mockMvc.perform(get("/api/filmes").param("todos", "true"))
                 .andExpect(status().isForbidden());
+    }
+
+    private String tokenExpirado() {
+        byte[] secret = "test-only-secret-for-cinetickets-integration-tests-123456"
+                .getBytes(StandardCharsets.UTF_8);
+        Instant expirado = Instant.now().minusSeconds(120);
+        return Jwts.builder().subject("admin-expirado@cinetickets.local")
+                .issuedAt(Date.from(expirado.minusSeconds(60)))
+                .expiration(Date.from(expirado))
+                .signWith(Keys.hmacShaKeyFor(secret)).compact();
     }
 
     private String criarAdminEObterToken() throws Exception {
