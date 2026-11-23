@@ -4,6 +4,13 @@ spring:
   datasource:
     # Store the complete JDBC URL, including credentials, only in DB_URL.
     url: ${DB_URL:jdbc:postgresql://localhost:5432/cinetickets}
+    hikari:
+      maximum-pool-size: 3
+      minimum-idle: 1
+      connection-timeout: 30000
+      validation-timeout: 5000
+      idle-timeout: 600000
+      max-lifetime: 1500000
   jpa:
     open-in-view: false
     hibernate:
