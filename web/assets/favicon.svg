@@ -1,11 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
-<defs>
- <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#071a49"/><stop offset="1" stop-color="#10265e"/></linearGradient>
- <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#28a8ff"/><stop offset=".55" stop-color="#0868ef"/><stop offset="1" stop-color="#1645c5"/></linearGradient>
- <linearGradient id="navy" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#122b68"/><stop offset="1" stop-color="#06163f"/></linearGradient>
-</defs>
-<rect x="6" y="6" width="148" height="148" rx="34" fill="none" stroke="#8dcaff" stroke-width="3"/>
-<rect x="12" y="12" width="136" height="136" rx="29" fill="#fff" stroke="url(#frame)" stroke-width="12"/>
-<path d="M102 39H70C43 39 27 58 27 81s16 40 43 40h18l11-24H71c-12 0-20-7-20-16s8-17 20-17h31z" fill="url(#blue)"/>
-<path d="M69 64h60l-12 23H96l-14 55H55l15-55H47z" fill="url(#navy)"/>
+<rect x="8" y="8" width="144" height="144" rx="32" fill="none" stroke="#0b1d50" stroke-width="12"/>
+<path d="M105 39H72C45 39 27 58 27 81s18 40 45 40h19V97H73c-12 0-20-7-20-16s8-17 20-17h32z" fill="#1675ed"/>
+<path d="M70 64h61l-12 24H97l-14 54H56l15-54H47z" fill="#0b1d50"/>
 </svg>
