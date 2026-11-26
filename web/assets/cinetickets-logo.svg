@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 160" role="img" aria-labelledby="title">
+<title id="title">CineTickets</title>
+<rect x="12" y="12" width="130" height="130" rx="27" fill="none" stroke="#0b1d50" stroke-width="11"/>
+<path d="M96 39H67C43 39 27 56 27 77s16 39 40 39h18V94H68c-10 0-17-7-17-17s7-17 17-17h28z" fill="#1675ed"/>
+<path d="M67 63h62l-12 23H95l-13 53H57l15-53H45z" fill="#0b1d50"/>
+<text x="177" y="99" font-family="Manrope,Arial,sans-serif" font-size="65" letter-spacing="-2">
+<tspan font-weight="800" fill="#0b1d50">CINE</tspan><tspan font-weight="400" fill="#0b1d50">TICKETS</tspan>
+</text>
+</svg>
