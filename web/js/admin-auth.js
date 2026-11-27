@@ -1,10 +1,30 @@
 (() => {
  const TOKEN_KEY = 'ct-admin-token';
  const DEFAULT_API_URL = 'https://cinetickets-api-eqww.onrender.com';
- const apiBaseUrl = (window.CINETICKETS_API_URL || DEFAULT_API_URL).replace(/\/+$/, '');
+ const apiBaseUrl = (window.CINETICKETS_API_URL || DEFAULT_API_URL).replace(/\\/+$/, '');
  const apiBase = new URL(apiBaseUrl, window.location.href);
- const apiPath = apiBase.pathname.replace(/\/+$/, '');
+ const apiPath = apiBase.pathname.replace(/\\/+$/, '');
  const token = () => sessionStorage.getItem(TOKEN_KEY);
+ const parseJwt = jwt => {
+  try {
+   const payload = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+   return JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '=')));
+  } catch {
+   return null;
+  }
+ };
+
+ const hasValidToken = () => {
+  const jwt = token();
+  if (!jwt) return false;
+  const exp = parseJwt(jwt)?.exp;
+  if (!exp || exp * 1000 <= Date.now()) {
+   sessionStorage.removeItem(TOKEN_KEY);
+   return false;
+  }
+  return true;
+ };
+
  const originalFetch = window.fetch.bind(window);
 
  const isApiRequest = rawUrl => {
@@ -48,7 +68,7 @@
    logout.hidden = false;
   };
 
-  if (token()) showAuthenticated();
+  if (hasValidToken()) showAuthenticated();
   else {
    login.hidden = false;
    content.hidden = true;
