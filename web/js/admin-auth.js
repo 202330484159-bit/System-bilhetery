@@ -1,9 +1,9 @@
 (() => {
  const TOKEN_KEY = 'ct-admin-token';
  const DEFAULT_API_URL = 'https://cinetickets-api-eqww.onrender.com';
- const apiBaseUrl = (window.CINETICKETS_API_URL || DEFAULT_API_URL).replace(/\\/+$/, '');
+ const apiBaseUrl = (window.CINETICKETS_API_URL || DEFAULT_API_URL).replace(/\/+$/, '');
  const apiBase = new URL(apiBaseUrl, window.location.href);
- const apiPath = apiBase.pathname.replace(/\\/+$/, '');
+ const apiPath = apiBase.pathname.replace(/\/+$/, '');
  const token = () => sessionStorage.getItem(TOKEN_KEY);
  const parseJwt = jwt => {
   try {
