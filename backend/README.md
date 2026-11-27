@@ -56,7 +56,7 @@ mvn test
 O servidor verifica assinatura, expiração e situação ativa/perfil do usuário no banco em cada requisição protegida.
 
 ## Banco de dados
-Flyway controla as migrações. O Hibernate usa ddl-auto: validate, portanto valida o mapeamento sem alterar tabelas automaticamente. A configuração de baseline versão 2 é necessária para o banco Supabase já provisionado nesta instalação; confira o histórico antes de reutilizar em outro banco.
+Flyway controla as migrações. O Hibernate usa ddl-auto: validate, portanto valida o mapeamento sem alterar tabelas automaticamente. A configuração atual usa baseline-on-migrate: true e baseline-version: 1. Em um banco vazio, o Flyway executa V1 e V2 normalmente. Em um banco não vazio sem histórico do Flyway, ele registra um baseline na versão 1 e executa as migrações posteriores (como V2); por isso, o esquema legado precisa já corresponder ao conteúdo esperado após V1. Se o banco já possui a tabela flyway_schema_history, o histórico registrado é a referência para decidir quais migrações executar, e alterar baseline-version não reescreve esse histórico. Antes de reutilizar a aplicação em outro banco, confira o esquema e o histórico existentes; nunca edite uma migration que já tenha sido aplicada.
 
 ## Limitações funcionais
 Esta entrega cobre autenticação administrativa e catálogo de filmes. Cadastro de clientes, recuperação de senha, revogação antecipada de JWT, salas, sessões, reservas, pagamento e emissão de ingressos ainda não estão implementados. O checkout do frontend é demonstrativo e não processa vendas reais.
