@@ -19,6 +19,6 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: CORS_ALLOWED_ORIGINS
-        value: https://system-bilhetery.vercel.app
+        value: https://system-bilhetery.vercel.app,https://system-bilhetery-web-git-feature-identida-b0a4ad-pedro-projetcs.vercel.app
       - key: JWT_EXPIRATION_MINUTES
         value: "60"
