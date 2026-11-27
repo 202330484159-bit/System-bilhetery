@@ -1,67 +1,62 @@
 # CineTickets API
 
-Backend REST em Java 21 + Spring Boot 3.5 + PostgreSQL.
+Backend REST em Java 21 + Spring Boot + PostgreSQL.
 
 ## Requisitos
 - JDK 21
 - Maven 3.9+
-- Docker e Docker Compose (para subir o PostgreSQL)
+- Projeto Supabase (recomendado) ou PostgreSQL local
 
-## Iniciar o banco
-Na pasta `backend/`:
+## Conexão com Supabase
+1. No Supabase, abra Connect → Session Pooler → JDBC e copie a URL JDBC.
+2. Confirme que a conexão usa SSL (sslmode=require) e a porta do Session Pooler (5432).
+3. No GitHub, abra Settings → Secrets and variables → Codespaces e crie o secret DB_URL com a URL JDBC completa.
+4. Reinicie o Codespace para carregar o secret.
 
-```bash
-docker compose up -d
-```
+A URL JDBC contém credenciais. Nunca a coloque no código, commits, prints ou mensagens. Não compartilhe DB_URL, JWT_SECRET ou senhas.
 
-As credenciais acima são apenas para desenvolvimento local. Altere-as antes de qualquer implantação.
-
-## Executar a API
-Na pasta `backend/`:
+Na pasta backend, inicie a API com:
 
 ```bash
 mvn spring-boot:run
 ```
 
-API: `http://localhost:8080`
+O backend não precisa de banco local quando DB_URL aponta para o Supabase.
 
-O Flyway cria a tabela inicial e o Hibernate valida o esquema. Configure `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` e `CORS_ALLOWED_ORIGINS` por variáveis de ambiente quando necessário.
+## Configuração
+Configure por variáveis de ambiente:
+- DB_URL: URL JDBC completa do banco.
+- CORS_ALLOWED_ORIGINS: origens exatas do frontend, separadas por vírgula.
+- JWT_SECRET: segredo aleatório com pelo menos 32 bytes. É obrigatório; não existe segredo padrão seguro.
+- JWT_EXPIRATION_MINUTES: validade do token, entre 1 e 1440 minutos (padrão 60).
+- ADMIN_EMAIL e ADMIN_PASSWORD: credenciais para criar o primeiro administrador; senha com no mínimo 12 caracteres e no máximo 72 bytes UTF-8.
 
-## Endpoints iniciais
+Exemplo para gerar segredo: openssl rand -base64 48. Nunca versione o valor real.
 
-| Método | Endpoint | Ação |
-|---|---|---|
-| GET | /api/filmes | Lista filmes ativos |
-| GET | /api/filmes?todos=true | Lista todos, inclusive inativos |
-| GET | /api/filmes/{id} | Consulta um filme |
-| POST | /api/filmes | Cadastra filme |
-| PUT | /api/filmes/{id} | Atualiza filme |
-| DELETE | /api/filmes/{id} | Desativa filme (exclusão lógica) |
+O primeiro administrador é criado apenas se o e-mail ainda não existir. A senha é armazenada com BCrypt. Alterar os Secrets depois não redefine a senha de uma conta existente.
 
-Exemplo de JSON para POST/PUT:
+## Testes automatizados
+Os testes usam H2 em memória e não precisam conectar ao Supabase:
 
-```json
-{
-  "titulo": "Órbita Final",
-  "genero": "Ficção",
-  "duracaoMinutos": 128,
-  "classificacaoIndicativa": "12 anos",
-  "sinopse": "Uma missão além das estrelas.",
-  "ativo": true
-}
+```bash
+mvn test
 ```
 
-## Organização
-- `filme/`: entidade, DTOs, repositório, serviço e controller do catálogo.
-- `config/`: configuração CORS.
-- `shared/`: tratamento padronizado de erros.
-- `resources/db/migration/`: histórico versionado do banco.
+## Endpoints
+| Método | Endpoint | Acesso |
+|---|---|---|
+| POST | /api/auth/login | Público |
+| GET | /api/filmes | Público, apenas ativos |
+| GET | /api/filmes/{id} | Público |
+| GET | /api/filmes?todos=true | ADMIN |
+| POST | /api/filmes | ADMIN |
+| PUT | /api/filmes/{id} | ADMIN |
+| DELETE | /api/filmes/{id} | ADMIN |
 
-## Próximas entregas
-1. Salas e configuração de assentos.
-2. Sessões, formatos e preços por categoria.
-3. Reserva transacional de assentos.
-4. Pedidos e emissão de ingressos.
-5. Autenticação e autorização administrativa.
+O servidor verifica assinatura, expiração e situação ativa/perfil do usuário no banco em cada requisição protegida.
 
-Ainda não há autenticação, integração com pagamento nem reserva de assentos nesta primeira etapa. Não exponha a API publicamente antes de implementar esses controles.
+## Banco de dados
+Flyway controla as migrações. O Hibernate usa ddl-auto: validate, portanto valida o mapeamento sem alterar tabelas automaticamente. A configuração atual usa baseline-on-migrate: true e baseline-version: 1. Em um banco vazio, o Flyway executa V1 e V2 normalmente. Em um banco não vazio sem histórico do Flyway, ele registra um baseline na versão 1 e executa as migrações posteriores (como V2); por isso, o esquema legado precisa já corresponder ao conteúdo esperado após V1. Se o banco já possui a tabela flyway_schema_history, o histórico registrado é a referência para decidir quais migrações executar, e alterar baseline-version não reescreve esse histórico. Antes de reutilizar a aplicação em outro banco, confira o esquema e o histórico existentes; nunca edite uma migration que já tenha sido aplicada.
+
+## Limitações funcionais
+Esta entrega cobre autenticação administrativa e catálogo de filmes. Cadastro de clientes, recuperação de senha, revogação antecipada de JWT, salas, sessões, reservas, pagamento e emissão de ingressos ainda não estão implementados. O checkout do frontend é demonstrativo e não processa vendas reais.

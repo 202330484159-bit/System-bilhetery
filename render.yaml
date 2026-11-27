@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: cinetickets-api
+    runtime: docker
+    region: virginia
+    plan: free
+    branch: feature/autenticacao-jwt-admin
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/filmes
+    autoDeployTrigger: commit
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://system-bilhetery.vercel.app,https://system-bilhetery-web-git-feature-identida-b0a4ad-pedro-projetcs.vercel.app
+      - key: JWT_EXPIRATION_MINUTES
+        value: "60"
